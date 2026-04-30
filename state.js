@@ -270,5 +270,52 @@ module.exports = {
     getAiAutoMemoryDepth: () => {
         try { return Math.max(2, Math.min(parseInt(require('./lib/db').getSetting('aiAutoMemoryDepth')) || 6, 20)); } catch { return 6; }
     },
+
+    // --- Button Mode (bot-wide menu UI mode) ----------------------------
+    // Allowed values: on, off, auto, button, list, text. Default = auto
+    // (or BUTTON_MODE env var). See lib/ui/button-mode.js.
+    setButtonMode: (v) => {
+        const allowed = ['on', 'off', 'auto', 'button', 'list', 'text'];
+        const val = String(v || '').toLowerCase().trim();
+        if (!allowed.includes(val)) return false;
+        try { require('./lib/db').setSetting('buttonMode', val); } catch {}
+        _emit('buttonMode');
+        return true;
+    },
+    getButtonMode: () => {
+        try {
+            const v = require('./lib/db').getSetting('buttonMode');
+            const allowed = ['on', 'off', 'auto', 'button', 'list', 'text'];
+            if (typeof v === 'string' && allowed.includes(v.toLowerCase())) return v.toLowerCase();
+        } catch {}
+        const env = String(process.env.BUTTON_MODE || '').toLowerCase().trim();
+        const allowedEnv = ['on', 'off', 'auto', 'button', 'list', 'text'];
+        if (allowedEnv.includes(env)) return env;
+        return 'auto';
+    },
+
+    // Role-menu mode: how role-based filtering is applied to menus.
+    //   strict — hide items the user cannot access AND deny on action
+    //   relaxed — show all items, deny on action only
+    //   off    — show all items, allow on action (visibility only — actual
+    //            command execution still goes through the regular role
+    //            checks downstream).
+    setRoleMenuMode: (v) => {
+        const allowed = ['strict', 'relaxed', 'off'];
+        const val = String(v || '').toLowerCase().trim();
+        if (!allowed.includes(val)) return false;
+        try { require('./lib/db').setSetting('roleMenuMode', val); } catch {}
+        _emit('roleMenuMode');
+        return true;
+    },
+    getRoleMenuMode: () => {
+        try {
+            const v = require('./lib/db').getSetting('roleMenuMode');
+            const allowed = ['strict', 'relaxed', 'off'];
+            if (typeof v === 'string' && allowed.includes(v.toLowerCase())) return v.toLowerCase();
+        } catch {}
+        return 'strict';
+    },
+
     getLogs: () => _logs,
 };
