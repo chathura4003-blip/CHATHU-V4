@@ -22,7 +22,31 @@ let _processedCount = 0;
 let _commandsCount = 0;
 const _logs = [];
 
+// --- Change-emitter (used by dashboard for real-time UI sync) ---------------
+const _listeners = new Set();
+let _emitTimer = null;
+const _pendingChanges = new Set();
+function _emit(key) {
+    if (key) _pendingChanges.add(key);
+    if (_emitTimer) return;
+    // Coalesce multiple rapid changes into a single broadcast tick (50ms).
+    _emitTimer = setTimeout(() => {
+        _emitTimer = null;
+        const keys = Array.from(_pendingChanges);
+        _pendingChanges.clear();
+        for (const fn of _listeners) {
+            try { fn(keys); } catch (e) { /* listener errors must not break setters */ }
+        }
+    }, 50);
+    if (typeof _emitTimer.unref === 'function') _emitTimer.unref();
+}
+
 module.exports = {
+    onChange: (fn) => {
+        if (typeof fn !== 'function') return () => {};
+        _listeners.add(fn);
+        return () => _listeners.delete(fn);
+    },
     setSocket: (s) => { _socket = s; },
     getSocket: () => _socket,
     setStatus: (s) => { _status = s; },
@@ -70,6 +94,7 @@ module.exports = {
     setWorkMode: (v) => { 
         _workMode = v; 
         try { require('./lib/db').setSetting('work_mode', v); } catch {}
+        _emit('workMode');
     },
     getWorkMode: () => {
         try { return require('./lib/db').getSetting('work_mode') || _workMode; } catch { return _workMode; }
@@ -77,6 +102,7 @@ module.exports = {
     setAutoStatus: (v) => { 
         _autoStatus = !!v; 
         try { require('./lib/db').setSetting('main_auto_status', !!v); } catch {}
+        _emit('autoStatus');
     },
     getAutoStatus: () => {
         try {
@@ -87,6 +113,7 @@ module.exports = {
     setBotEnabled: (v) => { 
         _botEnabled = !!v; 
         try { require('./lib/db').setSetting('main_bot_enabled', !!v); } catch {}
+        _emit('botEnabled');
     },
     getBotEnabled: () => {
         try { 
@@ -97,6 +124,7 @@ module.exports = {
     setDisabledModules: (v) => { 
         _disabledModules = Array.isArray(v) ? v : []; 
         try { require('./lib/db').setSetting('main_disabled_modules', _disabledModules); } catch {}
+        _emit('disabledModules');
     },
     getDisabledModules: () => {
         try { return require('./lib/db').getSetting('main_disabled_modules') || _disabledModules; } catch { return _disabledModules; }
@@ -104,87 +132,143 @@ module.exports = {
     setOwner: (v) => { 
         _owner = v; 
         try { require('./lib/db').setSetting('main_owner', v); } catch {}
+        _emit('owner');
     },
     getOwner: () => {
         try { return require('./lib/db').getSetting('main_owner') || _owner; } catch { return _owner; }
     },
     setAutoRead: (v) => {
         try { require('./lib/db').setSetting('autoRead', v === null ? null : !!v); } catch {}
+        _emit('autoRead');
     },
     getAutoRead: () => {
         try { return require('./lib/db').getSetting('autoRead'); } catch { return null; }
     },
     setAutoTyping: (v) => {
         try { require('./lib/db').setSetting('autoTyping', v === null ? null : !!v); } catch {}
+        _emit('autoTyping');
     },
     getAutoTyping: () => {
         try { return require('./lib/db').getSetting('autoTyping'); } catch { return null; }
     },
     setAutoReactStatus: (v) => {
         try { require('./lib/db').setSetting('auto_react_status', v === null ? null : !!v); } catch {}
+        _emit('autoReactStatus');
     },
     getAutoReactStatus: () => {
         try { return require('./lib/db').getSetting('auto_react_status'); } catch { return null; }
     },
     setAntiViewOnceEnabled: (v) => {
         try { require('./lib/db').setSetting('anti_view_once', !!v); } catch {}
+        _emit('antiViewOnce');
     },
     getAntiViewOnceEnabled: () => {
         try { return require('./lib/db').getSetting('anti_view_once') === true; } catch { return false; }
     },
     setNsfwEnabled: (v) => {
         try { require('./lib/db').setSetting('nsfwEnabled', v === null ? null : !!v); } catch {}
+        _emit('nsfwEnabled');
     },
     getNsfwEnabled: () => {
         try { return require('./lib/db').getSetting('nsfwEnabled'); } catch { return null; }
     },
     setAutoReply: (v) => {
         try { require('./lib/db').setSetting('autoReply', v === null ? null : !!v); } catch {}
+        _emit('autoReply');
     },
     getAutoReply: () => {
         try { return require('./lib/db').getSetting('autoReply'); } catch { return null; }
     },
     setAiAutoReply: (v) => {
         try { require('./lib/db').setSetting('aiAutoReply', v === null ? null : !!v); } catch {}
+        _emit('aiAutoReply');
     },
     getAiAutoReply: () => {
         try { return require('./lib/db').getSetting('aiAutoReply'); } catch { return null; }
     },
     setAiAutoPersona: (v) => {
         try { require('./lib/db').setSetting('aiAutoPersona', v); } catch {}
+        _emit('aiAutoPersona');
     },
     getAiAutoPersona: () => {
         try { return require('./lib/db').getSetting('aiAutoPersona') || 'friendly'; } catch { return 'friendly'; }
     },
     setAiAutoLang: (v) => {
         try { require('./lib/db').setSetting('aiAutoLang', v); } catch {}
+        _emit('aiAutoLang');
     },
     getAiAutoLang: () => {
         try { return require('./lib/db').getSetting('aiAutoLang') || 'auto'; } catch { return 'auto'; }
     },
     setAiAutoVoice: (v) => {
         try { require('./lib/db').setSetting('aiAutoVoice', !!v); } catch { return false; }
+        _emit('aiAutoVoice');
     },
     getAiAutoVoice: () => {
         try { return require('./lib/db').getSetting('aiAutoVoice') === true; } catch { return false; }
     },
     setAiGroupMode: (v) => {
         try { require('./lib/db').setSetting('aiGroupMode', v); } catch {}
+        _emit('aiGroupMode');
     },
     getAiGroupMode: () => {
         try { return require('./lib/db').getSetting('aiGroupMode') || 'mention'; } catch { return 'mention'; }
     },
     setAiSystemInstruction: (v) => {
         try { require('./lib/db').setSetting('aiSystemInstruction', v); } catch {}
+        _emit('aiSystemInstruction');
     },
     getAiSystemInstruction: () => {
         try { return require('./lib/db').getSetting('aiSystemInstruction') || ''; } catch { return ''; }
     },
     setAiMaxWords: (v) => {
         try { require('./lib/db').setSetting('aiMaxWords', parseInt(v) || 30); } catch {}
+        _emit('aiMaxWords');
     },
     getAiMaxWords: () => {
         try { return parseInt(require('./lib/db').getSetting('aiMaxWords')) || 30; } catch { return 30; }
+    },
+    // --- AI auto-reply advanced features --------------------------------
+    setAiAutoWakeWords: (v) => {
+        const cleaned = String(v || '')
+            .split(/[,\n]+/).map(s => s.trim().toLowerCase()).filter(Boolean)
+            .slice(0, 30).join(',');
+        try { require('./lib/db').setSetting('aiAutoWakeWords', cleaned); } catch {}
+        _emit('aiAutoWakeWords');
+    },
+    getAiAutoWakeWords: () => {
+        try {
+            const raw = require('./lib/db').getSetting('aiAutoWakeWords') || '';
+            return String(raw).split(',').map(s => s.trim()).filter(Boolean);
+        } catch { return []; }
+    },
+    setAiAutoBurstShield: (v) => {
+        try { require('./lib/db').setSetting('aiAutoBurstShield', v === null ? null : !!v); } catch {}
+        _emit('aiAutoBurstShield');
+    },
+    getAiAutoBurstShield: () => {
+        try {
+            const val = require('./lib/db').getSetting('aiAutoBurstShield');
+            return val === undefined || val === null ? true : !!val;
+        } catch { return true; }
+    },
+    setAiAutoLightReact: (v) => {
+        try { require('./lib/db').setSetting('aiAutoLightReact', v === null ? null : !!v); } catch {}
+        _emit('aiAutoLightReact');
+    },
+    getAiAutoLightReact: () => {
+        try {
+            const val = require('./lib/db').getSetting('aiAutoLightReact');
+            return val === undefined || val === null ? true : !!val;
+        } catch { return true; }
+    },
+    setAiAutoMemoryDepth: (v) => {
+        const n = Math.max(2, Math.min(parseInt(v) || 6, 20));
+        try { require('./lib/db').setSetting('aiAutoMemoryDepth', n); } catch {}
+        _emit('aiAutoMemoryDepth');
+    },
+    getAiAutoMemoryDepth: () => {
+        try { return Math.max(2, Math.min(parseInt(require('./lib/db').getSetting('aiAutoMemoryDepth')) || 6, 20)); } catch { return 6; }
     },
     getLogs: () => _logs,
 };
