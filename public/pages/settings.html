@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="page" content="settings" />
-    <title>Settings · Chathu MD</title>
+    <title>Settings · Chathu MD V4.2</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,8 +21,8 @@
               <path fill="currentColor" d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
             </svg></div>
           <div class="meta">
-            <div class="name">Chathu MD</div>
-            <div class="ver">v3.0 - Multi-Device</div>
+            <div class="name">Chathu MD V4.2</div>
+            <div class="ver">v4.2 · Advanced UI</div>
           </div>
         </div>
 
@@ -182,6 +182,39 @@
               </div>
               <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn btn-primary btn-sm"
                   onclick="saveSettings()">Save Changes</button></div>
+            </div>
+
+            <!-- ─── 🎛️ UI MODE (V4.2) ─────────────────────────────────── -->
+            <div class="card v42-card mt-3" id="uiModeCard">
+              <div class="card-h">
+                <div class="title">🎛️ UI Mode <span class="v42-pill">V4.2</span></div>
+                <div class="desc">Toggle the Advanced UI Engine. When <b>off</b> the bot uses the original pre-V4 menu / search / download / settings flow exactly as before.</div>
+              </div>
+              <div class="grid grid-2">
+                <label class="row v42-row"
+                  style="padding:14px;border:1px solid var(--line-2);border-radius:var(--r);justify-content:space-between">
+                  <span><b>Button Mode</b><br /><span class="text-xs dim">On = buttons / list / advanced text. Off = legacy flow.</span></span>
+                  <select class="select input" id="setButtonMode" style="max-width:200px">
+                    <option value="on">On — Advanced UI Engine</option>
+                    <option value="off">Off — Legacy flow</option>
+                  </select>
+                </label>
+                <label class="row v42-row"
+                  style="padding:14px;border:1px solid var(--line-2);border-radius:var(--r);justify-content:space-between">
+                  <span><b>Role Menu Mode</b><br /><span class="text-xs dim">Visibility filter applied before render</span></span>
+                  <select class="select input" id="setRoleMenuMode" style="max-width:170px">
+                    <option value="strict">Strict — hide unreachable items</option>
+                    <option value="relaxed">Relaxed — show all, block on click</option>
+                    <option value="off">Off — no filtering</option>
+                  </select>
+                </label>
+              </div>
+              <div id="uiModeHint" class="notice-list mt-3" style="display:none"></div>
+              <div class="row" style="gap:10px;margin-top:14px">
+                <a class="btn btn-sm" href="/menu_ui" style="text-decoration:none">Open Menu UI Preview →</a>
+                <div style="flex:1"></div>
+                <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save UI Mode</button>
+              </div>
             </div>
           </div>
           </main>

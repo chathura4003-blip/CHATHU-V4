@@ -107,6 +107,9 @@ function getSettingsPayload() {
         workMode: runtimeSettings.getWorkMode(),
         autoViewStatus: runtimeSettings.getAutoViewStatus(),
         autoReactStatus: runtimeSettings.getAutoReactStatus(),
+        buttonMode:   typeof appState.getButtonMode   === 'function' ? appState.getButtonMode()   : 'auto',
+        roleMenuMode: typeof appState.getRoleMenuMode === 'function' ? appState.getRoleMenuMode() : 'strict',
+        dashboardVersion: 'v4.2',
         aiAutoReply: appState.getAiAutoReply(),
         aiAutoVoice: appState.getAiAutoVoice(),
         aiAutoPersona: appState.getAiAutoPersona(),
@@ -545,6 +548,7 @@ const PAGE_IDS = [
     'dashboard', 'sessions', 'users', 'groups', 'commands',
     'aiengine', 'broadcast', 'autoreply', 'scheduler', 'users_db',
     'files', 'viewonce_gallery', 'settings', 'logs',
+    'menu_ui',
 ];
 
 app.get('/', (req, res) => res.redirect('/dashboard'));
@@ -1259,6 +1263,71 @@ app.post('/bot-api/restart', authMiddleware, (req, res) => {
     }, 2000);
 });
 
+// ── Menu UI Preview (V4.2) ────────────────────────────────────────────────
+// Returns a server-rendered preview of the bot-wide menu system so the
+// dashboard's Menu UI page can show *exactly* what a WhatsApp client would
+// see for a given role / button mode. We reuse lib/ui directly so the
+// preview never drifts from the real implementation.
+app.get('/bot-api/menu-ui/preview', authMiddleware, (req, res) => {
+    try {
+        const ui = require('./lib/ui');
+        const role       = String(req.query.role       || 'normal');
+        const buttonMode = String(req.query.buttonMode || 'auto');
+        const categoryId = req.query.category ? String(req.query.category) : null;
+        // `roleOverride` is honoured by lib/ui/role-menu.js#getUserRole so
+        // the dropdown actually changes what the preview renders. Without
+        // it the synthetic sender JID would always resolve to 'normal' and
+        // owner / premium-only categories would be invisible regardless of
+        // the dropdown selection.
+        const ctx = {
+            sender:   '94700000000@s.whatsapp.net',
+            chatJid:  '94700000000@s.whatsapp.net',
+            role,
+            roleOverride: role,
+            buttonMode,
+            botName:  runtimeSettings.getBotName(),
+            prefix:   runtimeSettings.getPrefix(),
+            pushName: 'Preview User',
+        };
+        const menu = categoryId
+            ? ui.buildCategoryMenu(categoryId, ctx)
+            : ui.buildTopLevelMenu(ctx);
+        if (!menu) return res.status(404).json({ error: 'Unknown category' });
+        // Run the same item filter / role pipeline `sendMenu` uses.
+        const filtered = (typeof ui.filterItemsByRole === 'function'
+            ? ui.filterItemsByRole(menu.items || [], role, ctx)
+            : (menu.items || []));
+        const items = filtered.map((it, i) => ({
+            ...it,
+            index: i + 1,
+            label: it.label || it.title || `Option ${i + 1}`,
+        }));
+        // Build the styled box-text menu using the same builder.
+        let text = '';
+        try {
+            const builder = require('./lib/ui/menu-builder');
+            text = builder.buildMenuText(menu, items, { ...ctx, role, buttonMode });
+        } catch (_) { text = String(menu.text || menu.body || ''); }
+        res.json({
+            ok: true,
+            mode: buttonMode,
+            role,
+            menu: {
+                id: menu.id,
+                type: menu.type || 'menu',
+                title: menu.title || 'Select Option',
+                buttonText: menu.buttonText || '📋 Choose One',
+                sectionTitle: menu.sectionTitle || 'Options',
+                footer: menu.footer || `${runtimeSettings.getBotName()} • V4.2`,
+                items,
+                text,
+            },
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // ── Settings ───────────────────────────────────────────────────────────────
 app.get('/bot-api/settings', authMiddleware, (req, res) => {
     res.json(getSettingsPayload());
@@ -1267,6 +1336,7 @@ app.get('/bot-api/settings', authMiddleware, (req, res) => {
 app.post('/bot-api/settings', authMiddleware, (req, res) => {
     const { 
         botName, prefix, autoRead, autoTyping, nsfwEnabled, workMode, autoViewStatus, autoReactStatus,
+        buttonMode, roleMenuMode,
         aiAutoReply, aiAutoPersona, aiAutoLang, aiAutoVoice, aiGroupMode, aiSystemInstruction, aiMaxWords,
         aiAutoWakeWords, aiAutoBurstShield, aiAutoLightReact, aiAutoMemoryDepth
     } = req.body || {};
@@ -1287,7 +1357,12 @@ app.post('/bot-api/settings', authMiddleware, (req, res) => {
         }
         if (autoViewStatus !== undefined) db.setSetting('auto_view_status', !!autoViewStatus);
         if (autoReactStatus !== undefined) db.setSetting('auto_react_status', !!autoReactStatus);
-        
+
+        // Bot-wide UI Mode (Button Mode + Role Menu Mode) — populated by the
+        // V4.2 Settings panel. Validation lives in state.js.
+        if (buttonMode   !== undefined && typeof appState.setButtonMode   === 'function') appState.setButtonMode(String(buttonMode));
+        if (roleMenuMode !== undefined && typeof appState.setRoleMenuMode === 'function') appState.setRoleMenuMode(String(roleMenuMode));
+
         // AI Settings - Aligning with canonical camelCase fields
         if (aiAutoReply !== undefined) appState.setAiAutoReply(!!aiAutoReply);
         if (aiAutoPersona !== undefined) appState.setAiAutoPersona(String(aiAutoPersona));

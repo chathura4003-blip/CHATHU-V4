@@ -22,6 +22,19 @@ let _processedCount = 0;
 let _commandsCount = 0;
 const _logs = [];
 
+// --- Button Mode normalizer (V4.2: binary on/off) --------------------------
+// Accepts modern "on"/"off" plus legacy values (auto/button/list/text/true/1
+// /false/0/yes/no) and reduces them to "on" or "off". `text` and `off` and
+// any falsy/no value collapse to "off"; everything else collapses to "on".
+function _normalizeButtonMode(v) {
+    if (v == null) return null;
+    const s = String(v).toLowerCase().trim();
+    if (!s) return null;
+    if (['off', 'false', '0', 'no', 'n', 'text', 'disable', 'disabled', 'legacy'].includes(s)) return 'off';
+    if (['on',  'true',  '1', 'yes', 'y', 'auto', 'button', 'list', 'enable', 'enabled', 'advanced'].includes(s)) return 'on';
+    return null;
+}
+
 // --- Change-emitter (used by dashboard for real-time UI sync) ---------------
 const _listeners = new Set();
 let _emitTimer = null;
@@ -272,26 +285,29 @@ module.exports = {
     },
 
     // --- Button Mode (bot-wide menu UI mode) ----------------------------
-    // Allowed values: on, off, auto, button, list, text. Default = auto
-    // (or BUTTON_MODE env var). See lib/ui/button-mode.js.
+    // V4.2: simplified to a binary on/off switch.
+    //   on  — Advanced UI Engine: WhatsApp buttons / list / native flow,
+    //         advanced text fallback, new menu-state numeric reply.
+    //   off — Legacy flow: every menu/search/download command runs through
+    //         the original code paths exactly as before V4.
+    // Old values (auto/button/list/true/1) all normalise to "on";
+    // (text/false/0) normalise to "off" so persisted settings keep working.
     setButtonMode: (v) => {
-        const allowed = ['on', 'off', 'auto', 'button', 'list', 'text'];
-        const val = String(v || '').toLowerCase().trim();
-        if (!allowed.includes(val)) return false;
-        try { require('./lib/db').setSetting('buttonMode', val); } catch {}
+        const norm = _normalizeButtonMode(v);
+        if (norm == null) return false;
+        try { require('./lib/db').setSetting('buttonMode', norm); } catch {}
         _emit('buttonMode');
         return true;
     },
     getButtonMode: () => {
         try {
             const v = require('./lib/db').getSetting('buttonMode');
-            const allowed = ['on', 'off', 'auto', 'button', 'list', 'text'];
-            if (typeof v === 'string' && allowed.includes(v.toLowerCase())) return v.toLowerCase();
+            const norm = _normalizeButtonMode(v);
+            if (norm) return norm;
         } catch {}
-        const env = String(process.env.BUTTON_MODE || '').toLowerCase().trim();
-        const allowedEnv = ['on', 'off', 'auto', 'button', 'list', 'text'];
-        if (allowedEnv.includes(env)) return env;
-        return 'auto';
+        const env = _normalizeButtonMode(process.env.BUTTON_MODE);
+        if (env) return env;
+        return 'on';
     },
 
     // Role-menu mode: how role-based filtering is applied to menus.

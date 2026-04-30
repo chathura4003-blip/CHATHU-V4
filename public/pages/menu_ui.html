@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="page" content="menu_ui" />
+  <title>Menu UI · Chathu MD V4.2</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <div id="app">
+    <div class="backdrop" id="backdrop" onclick="toggleSidebar(false)"></div>
+    <div class="layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sb-brand">
+          <div class="logo"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" /></svg></div>
+          <div class="meta">
+            <div class="name">Chathu MD V4.2</div>
+            <div class="ver">v4.2 · Advanced UI</div>
+          </div>
+        </div>
+        <div class="sb-status offline" id="sbStatus">
+          <div class="row"><span class="ind"></span><span class="label">Core Health</span></div>
+          <div class="value" id="sbValue">Offline</div>
+          <div class="text-xs dim mt-1" id="sbSub">No active link</div>
+        </div>
+        <nav class="sb-nav">
+          <div class="sb-section">Workspace</div>
+          <div class="nav-item" data-page="dashboard"><i class="ic" style="-webkit-mask-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><rect x=%223%22 y=%223%22 width=%227%22 height=%229%22/><rect x=%2214%22 y=%223%22 width=%227%22 height=%225%22/><rect x=%2214%22 y=%2212%22 width=%227%22 height=%229%22/><rect x=%223%22 y=%2216%22 width=%227%22 height=%225%22/></svg>')"></i><span>Dashboard</span></div>
+          <div class="nav-item" data-page="sessions"><i class="ic" style="-webkit-mask-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><rect x=%225%22 y=%222%22 width=%2214%22 height=%2220%22 rx=%222%22/><path d=%22M12 18h.01%22/></svg>')"></i><span>Sessions</span></div>
+          <div class="nav-item" data-page="users"><i class="ic" style="-webkit-mask-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2%22/><circle cx=%229%22 cy=%227%22 r=%224%22/></svg>')"></i><span>Fleet Orchestration</span></div>
+          <div class="nav-item" data-page="commands"><i class="ic" style="-webkit-mask-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%2216 18 22 12 16 6%22/><polyline points=%228 6 2 12 8 18%22/></svg>')"></i><span>Commands</span></div>
+
+          <div class="sb-section">System</div>
+          <div class="nav-item active" data-page="menu_ui"><i class="ic" style="-webkit-mask-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><rect x=%223%22 y=%224%22 width=%2218%22 height=%2216%22 rx=%222%22/><line x1=%223%22 y1=%2210%22 x2=%2221%22 y2=%2210%22/><line x1=%228%22 y1=%2214%22 x2=%2216%22 y2=%2214%22/><line x1=%228%22 y1=%2217%22 x2=%2216%22 y2=%2217%22/></svg>')"></i><span>Menu UI</span><span class="badge" style="background:linear-gradient(135deg,#00ff88,#7c3aed);color:#000;font-weight:700">v4.2</span></div>
+          <div class="nav-item" data-page="settings"><i class="ic" style="-webkit-mask-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><circle cx=%2212%22 cy=%2212%22 r=%223%22/><path d=%22M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z%22/></svg>')"></i><span>Settings</span></div>
+        </nav>
+
+        <div class="sb-foot">
+          <div class="avatar" id="footAvatar">A</div>
+          <div class="info"><div class="uname" id="footUser">admin</div><div class="role">Administrator</div></div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div id="topProgress" class="top-progress"></div>
+        <div class="top-bar">
+          <button class="hamburger" onclick="toggleSidebar(true)" aria-label="Open menu">
+            <span></span><span></span><span></span>
+          </button>
+          <div id="activePageTitle" class="title">Menu UI Preview</div>
+          <div class="row" style="gap:10px">
+            <div class="stat-pill">Bot <b id="topUptime">--</b></div>
+            <button class="btn btn-sm" onclick="logout()">Sign Out</button>
+          </div>
+        </div>
+
+        <div class="page active" id="page-menu_ui">
+          <div class="page-h">
+            <div>
+              <div class="h1">Menu UI Preview <span class="v42-pill">V4.2</span></div>
+              <div class="desc">Live render of the bot's central <code>sendMenu()</code> for any role / button mode. Reuses <code>lib/ui</code> directly — what you see is what users get on WhatsApp.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h">
+              <div class="title">Preview Controls</div>
+              <div class="desc">Pick a role + Button Mode + category. The preview re-renders instantly.</div>
+            </div>
+            <div class="menu-preview-shell">
+              <div class="menu-preview-controls">
+                <div class="field">
+                  <label>Role</label>
+                  <select class="select input" id="muRole">
+                    <option value="normal">Normal</option>
+                    <option value="premium">Premium</option>
+                    <option value="owner">Owner</option>
+                    <option value="premium_owner">Premium Owner</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Button Mode</label>
+                  <select class="select input" id="muMode">
+                    <option value="on">On — Advanced UI Engine</option>
+                    <option value="off">Off — Legacy flow</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Category</label>
+                  <select class="select input" id="muCategory">
+                    <option value="">Top-level Menu</option>
+                  </select>
+                </div>
+                <div class="row" style="gap:8px;margin-top:10px">
+                  <button class="btn btn-primary btn-sm" id="muRefresh" onclick="renderMenuPreview()">Refresh</button>
+                  <button class="btn btn-sm" onclick="resetMenuPreview()">Reset</button>
+                </div>
+                <div class="notice mt-3" style="font-size:12px;line-height:1.5">
+                  <strong>Tip:</strong> Tap a row in the preview to drill into a category — same as a list-message tap on WhatsApp.
+                </div>
+              </div>
+
+              <div class="wa-frame" id="muFrame">
+                <div class="v42-skel" id="muSkel" style="height:200px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toasts" class="toast-container"></div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    (function () {
+      const TOP_LEVEL_CATS = [
+        { id: 'ai',         label: '🤖 AI Center'        },
+        { id: 'voice',      label: '🎙 Voice & TTS'      },
+        { id: 'downloader', label: '🎬 Downloader'       },
+        { id: 'media',      label: '🎨 Media Tools'      },
+        { id: 'group',      label: '👥 Group Control'    },
+        { id: 'privacy',    label: '🛡 Privacy & Security' },
+        { id: 'settings',   label: '⚙ Bot Settings'     },
+        { id: 'system',     label: '📊 System Status'    },
+        { id: 'premium',    label: '⭐ Premium Panel'    },
+        { id: 'owner',      label: '👑 Owner Panel'      },
+      ];
+
+      function populateCategorySelect() {
+        const sel = document.getElementById('muCategory');
+        if (!sel) return;
+        for (const c of TOP_LEVEL_CATS) {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.label;
+          sel.appendChild(opt);
+        }
+      }
+
+      function bubble(text) {
+        const div = document.createElement('div');
+        div.className = 'wa-bubble';
+        div.textContent = text || '';
+        return div;
+      }
+
+      function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[c]);
+      }
+
+      async function renderMenuPreview() {
+        const role = document.getElementById('muRole').value;
+        const mode = document.getElementById('muMode').value;
+        const cat  = document.getElementById('muCategory').value;
+        const frame = document.getElementById('muFrame');
+        if (!frame) return;
+        frame.innerHTML = '<div class="v42-skel" style="height:200px"></div>';
+        try {
+          const qs = new URLSearchParams({ role, buttonMode: mode });
+          if (cat) qs.set('category', cat);
+          const data = await api('/bot-api/menu-ui/preview?' + qs.toString());
+          const m = data.menu || {};
+          frame.innerHTML = '';
+
+          // Always show the box-text as the primary bubble.
+          const bub = bubble(m.text || '(empty menu)');
+          frame.appendChild(bub);
+
+          if (mode === 'off') {
+            // Legacy mode — bot would have skipped the advanced UI engine.
+            // Show a hint instead of buttons / list.
+            const hint = document.createElement('div');
+            hint.className = 'wa-meta';
+            hint.style.opacity = '.7';
+            hint.style.fontSize = '11px';
+            hint.style.marginTop = '6px';
+            hint.textContent = '🚫 Advanced UI Engine OFF — bot would use the legacy flow on WhatsApp.';
+            bub.appendChild(hint);
+          } else if ((m.items || []).length > 3) {
+            // List Message style: inline rows with the buttonText trigger.
+            const trig = document.createElement('div');
+            trig.className = 'wa-list-trigger';
+            trig.textContent = m.buttonText || '📋 Choose One';
+            bub.appendChild(trig);
+            const rows = document.createElement('div');
+            rows.className = 'wa-list-rows';
+            (m.items || []).forEach((it) => {
+              const row = document.createElement('div');
+              row.className = 'wa-list-row';
+              row.innerHTML = '<div class="num">' + String(it.index).padStart(2, '0') + '.</div>'
+                + '<div><div class="title">' + escapeHtml(it.label || it.title) + '</div>'
+                + (it.description ? '<div class="desc">' + escapeHtml(it.description) + '</div>' : '')
+                + '<div class="desc" style="opacity:.6">' + escapeHtml(it.action || '') + '</div></div>';
+              row.addEventListener('click', () => onRowSelect(it));
+              rows.appendChild(row);
+            });
+            bub.appendChild(rows);
+          } else {
+            // ≤ 3 items: up to 3 reply chips (advanced engine).
+
+            const grp = document.createElement('div');
+            grp.className = 'wa-buttons';
+            (m.items || []).slice(0, 3).forEach((it) => {
+              const b = document.createElement('button');
+              b.className = 'wa-btn';
+              b.type = 'button';
+              b.textContent = it.label || it.title || ('Option ' + it.index);
+              b.addEventListener('click', () => onRowSelect(it));
+              grp.appendChild(b);
+            });
+            bub.appendChild(grp);
+          }
+
+          // Footer bubble showing what would be saved into menu-state.
+          const footer = document.createElement('div');
+          footer.className = 'wa-bubble outgoing';
+          footer.style.fontSize = '11px';
+          footer.style.opacity = '.85';
+          footer.textContent = '✉️ menu_state.save({ id: "<msg-id>", role: "' + role + '", mode: "' + mode + '", items: ' + (m.items || []).length + ', expiresIn: 5 min })';
+          frame.appendChild(footer);
+        } catch (e) {
+          frame.innerHTML = '<div class="notice"><strong>Preview error</strong>' + escapeHtml(e.message) + '</div>';
+        }
+      }
+
+      function onRowSelect(item) {
+        // If this is a category drill-down, switch the category select and re-render.
+        const action = String(item.action || '');
+        const m = action.match(/^menu:cat:(.+)$/);
+        if (m) {
+          const sel = document.getElementById('muCategory');
+          if (sel) {
+            sel.value = m[1];
+            renderMenuPreview();
+            return;
+          }
+        }
+        toast('Action: ' + (action || 'item ' + item.index), 'success');
+      }
+
+      function resetMenuPreview() {
+        document.getElementById('muRole').value = 'normal';
+        document.getElementById('muMode').value = 'on';
+        document.getElementById('muCategory').value = '';
+        renderMenuPreview();
+      }
+
+      // Re-render on any control change.
+      document.addEventListener('change', (e) => {
+        const id = e.target?.id;
+        if (id === 'muRole' || id === 'muMode' || id === 'muCategory') renderMenuPreview();
+      });
+
+      // Initial.
+      window.renderMenuPreview = renderMenuPreview;
+      window.resetMenuPreview  = resetMenuPreview;
+      window.initMenuUiTab     = renderMenuPreview;
+
+      // Page meta route triggers app.js init; ensure first render once token is present.
+      const tryStart = () => {
+        if (!localStorage.getItem('chmd_token')) return setTimeout(tryStart, 200);
+        populateCategorySelect();
+        renderMenuPreview();
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryStart);
+      } else {
+        tryStart();
+      }
+    })();
+  </script>
+</body>
+</html>
