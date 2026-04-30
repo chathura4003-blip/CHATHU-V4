@@ -548,7 +548,6 @@ const PAGE_IDS = [
     'dashboard', 'sessions', 'users', 'groups', 'commands',
     'aiengine', 'broadcast', 'autoreply', 'scheduler', 'users_db',
     'files', 'viewonce_gallery', 'settings', 'logs',
-    'menu_ui',
 ];
 
 app.get('/', (req, res) => res.redirect('/dashboard'));

@@ -310,24 +310,6 @@
         }
     }
 
-    // V4.2: inject the Menu UI Preview entry into every sidebar so the new
-    // page is reachable from anywhere without editing all 14 page HTMLs.
-    function ensureMenuUiNav() {
-        const nav = document.querySelector('.sb-nav');
-        if (!nav || nav.querySelector('[data-page="menu_ui"]')) return;
-        // Place it next to Settings under the System section if possible.
-        const anchor = nav.querySelector('[data-page="settings"]') || nav.querySelector('[data-page="logs"]');
-        const item = document.createElement('a');
-        item.className = 'nav-item';
-        item.dataset.page = 'menu_ui';
-        item.href = '/menu_ui';
-        item.innerHTML = `<i class="ic" style="-webkit-mask-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><rect x=%223%22 y=%224%22 width=%2218%22 height=%2216%22 rx=%222%22/><line x1=%223%22 y1=%2210%22 x2=%2221%22 y2=%2210%22/><line x1=%228%22 y1=%2214%22 x2=%2216%22 y2=%2214%22/><line x1=%228%22 y1=%2217%22 x2=%2216%22 y2=%2217%22/></svg>')"></i><span>Menu UI</span><span class="badge" style="background:linear-gradient(135deg,var(--brand,#00ff88),var(--accent,#7c3aed));color:#000;font-weight:700">v4.2</span>`;
-        if (anchor) nav.insertBefore(item, anchor);
-        else nav.appendChild(item);
-        if (CURRENT_PAGE) {
-          nav.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === CURRENT_PAGE));
-        }
-    }
 
     function activateCurrentPage() {
         if (!CURRENT_PAGE) return;
@@ -340,7 +322,6 @@
         const app = byId('app');
         if (app) app.style.display = 'block';
         ensureAiEngineNav();
-        ensureMenuUiNav();
         activateCurrentPage();
         const fu = document.getElementById('footUser'); if (fu) fu.textContent = State.user || 'admin';
         const fa = document.getElementById('footAvatar'); if (fa) fa.textContent = (State.user || 'A').charAt(0).toUpperCase();
