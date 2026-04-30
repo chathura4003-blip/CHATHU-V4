@@ -86,12 +86,8 @@
                 <div class="field">
                   <label>Button Mode</label>
                   <select class="select input" id="muMode">
-                    <option value="auto">Auto</option>
-                    <option value="on">On</option>
-                    <option value="button">Button</option>
-                    <option value="list">List</option>
-                    <option value="text">Text</option>
-                    <option value="off">Off</option>
+                    <option value="on">On — Advanced UI Engine</option>
+                    <option value="off">Off — Legacy flow</option>
                   </select>
                 </div>
                 <div class="field">
@@ -119,7 +115,7 @@
     </div>
   </div>
 
-  <div id="toastContainer" class="toast-container"></div>
+  <div id="toasts" class="toast-container"></div>
 
   <script src="/js/app.js"></script>
   <script>
@@ -179,9 +175,17 @@
           const bub = bubble(m.text || '(empty menu)');
           frame.appendChild(bub);
 
-          if (mode === 'off' || mode === 'text') {
-            // Pure text mode — nothing else.
-          } else if (mode === 'list' || (mode !== 'button' && (m.items || []).length > 3)) {
+          if (mode === 'off') {
+            // Legacy mode — bot would have skipped the advanced UI engine.
+            // Show a hint instead of buttons / list.
+            const hint = document.createElement('div');
+            hint.className = 'wa-meta';
+            hint.style.opacity = '.7';
+            hint.style.fontSize = '11px';
+            hint.style.marginTop = '6px';
+            hint.textContent = '🚫 Advanced UI Engine OFF — bot would use the legacy flow on WhatsApp.';
+            bub.appendChild(hint);
+          } else if ((m.items || []).length > 3) {
             // List Message style: inline rows with the buttonText trigger.
             const trig = document.createElement('div');
             trig.className = 'wa-list-trigger';
@@ -201,7 +205,8 @@
             });
             bub.appendChild(rows);
           } else {
-            // Button mode (≤ 3): up to 3 reply chips.
+            // ≤ 3 items: up to 3 reply chips (advanced engine).
+
             const grp = document.createElement('div');
             grp.className = 'wa-buttons';
             (m.items || []).slice(0, 3).forEach((it) => {
@@ -244,7 +249,7 @@
 
       function resetMenuPreview() {
         document.getElementById('muRole').value = 'normal';
-        document.getElementById('muMode').value = 'auto';
+        document.getElementById('muMode').value = 'on';
         document.getElementById('muCategory').value = '';
         renderMenuPreview();
       }

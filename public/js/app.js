@@ -2930,9 +2930,12 @@
         document.getElementById('setWorkMode').value = data.workMode || 'public';
         document.getElementById('setAutoViewStatus').checked = data.autoViewStatus !== false;
         document.getElementById('setAutoReactStatus').checked = data.autoReactStatus === true;
-        // V4.2: bot-wide UI Mode
+        // V4.2: bot-wide UI Mode (binary on/off; legacy values collapse).
         const bm = document.getElementById('setButtonMode');
-        if (bm) bm.value = data.buttonMode || 'auto';
+        if (bm) {
+          const raw = String(data.buttonMode || 'on').toLowerCase();
+          bm.value = (['off','false','0','no','n','text','disable','disabled','legacy'].includes(raw)) ? 'off' : 'on';
+        }
         const rm = document.getElementById('setRoleMenuMode');
         if (rm) rm.value = data.roleMenuMode || 'strict';
         renderSettingsWarnings(data);

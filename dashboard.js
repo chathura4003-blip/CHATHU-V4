@@ -1274,10 +1274,16 @@ app.get('/bot-api/menu-ui/preview', authMiddleware, (req, res) => {
         const role       = String(req.query.role       || 'normal');
         const buttonMode = String(req.query.buttonMode || 'auto');
         const categoryId = req.query.category ? String(req.query.category) : null;
+        // `roleOverride` is honoured by lib/ui/role-menu.js#getUserRole so
+        // the dropdown actually changes what the preview renders. Without
+        // it the synthetic sender JID would always resolve to 'normal' and
+        // owner / premium-only categories would be invisible regardless of
+        // the dropdown selection.
         const ctx = {
             sender:   '94700000000@s.whatsapp.net',
             chatJid:  '94700000000@s.whatsapp.net',
             role,
+            roleOverride: role,
             buttonMode,
             botName:  runtimeSettings.getBotName(),
             prefix:   runtimeSettings.getPrefix(),

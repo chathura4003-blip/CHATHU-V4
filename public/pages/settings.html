@@ -188,19 +188,15 @@
             <div class="card v42-card mt-3" id="uiModeCard">
               <div class="card-h">
                 <div class="title">🎛️ UI Mode <span class="v42-pill">V4.2</span></div>
-                <div class="desc">Controls every menu / search-result / quality picker the bot sends on WhatsApp. Changes apply immediately to all sessions.</div>
+                <div class="desc">Toggle the Advanced UI Engine. When <b>off</b> the bot uses the original pre-V4 menu / search / download / settings flow exactly as before.</div>
               </div>
               <div class="grid grid-2">
                 <label class="row v42-row"
                   style="padding:14px;border:1px solid var(--line-2);border-radius:var(--r);justify-content:space-between">
-                  <span><b>Button Mode</b><br /><span class="text-xs dim">How interactive menus are rendered</span></span>
-                  <select class="select input" id="setButtonMode" style="max-width:170px">
-                    <option value="auto">Auto (recommended)</option>
-                    <option value="on">On — buttons + list</option>
-                    <option value="button">Button — 3 buttons / list</option>
-                    <option value="list">List — always WhatsApp list</option>
-                    <option value="text">Text — numbered text only</option>
-                    <option value="off">Off — text only (numbers still work)</option>
+                  <span><b>Button Mode</b><br /><span class="text-xs dim">On = buttons / list / advanced text. Off = legacy flow.</span></span>
+                  <select class="select input" id="setButtonMode" style="max-width:200px">
+                    <option value="on">On — Advanced UI Engine</option>
+                    <option value="off">Off — Legacy flow</option>
                   </select>
                 </label>
                 <label class="row v42-row"
