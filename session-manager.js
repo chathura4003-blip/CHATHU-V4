@@ -856,6 +856,20 @@ async function updateSessionSettings(id, settings) {
     if (settings.mentionReply !== undefined) entry.mentionReply = String(settings.mentionReply);
     if (settings.privacyAutoCleanup !== undefined) entry.privacyAutoCleanup = !!settings.privacyAutoCleanup;
     if (settings.privacyMaxStorageMb !== undefined) entry.privacyMaxStorageMb = parseInt(settings.privacyMaxStorageMb) || 500;
+
+    // --- Button Mode (per-session UI override) ---------------------------
+    if (settings.buttonMode !== undefined) {
+        const allowed = ['on', 'off', 'auto', 'button', 'list', 'text'];
+        const val = settings.buttonMode === null ? null : String(settings.buttonMode).toLowerCase().trim();
+        if (val === null) entry.buttonMode = null;
+        else if (allowed.includes(val)) entry.buttonMode = val;
+    }
+    if (settings.roleMenuMode !== undefined) {
+        const allowed = ['strict', 'relaxed', 'off'];
+        const val = settings.roleMenuMode === null ? null : String(settings.roleMenuMode).toLowerCase().trim();
+        if (val === null) entry.roleMenuMode = null;
+        else if (allowed.includes(val)) entry.roleMenuMode = val;
+    }
     
     if (settings.activeTheme !== undefined) {
         try {
