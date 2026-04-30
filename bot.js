@@ -1000,8 +1000,17 @@ async function handleMessages(sock, messageBatch, sessionId = '__main__') {
 
         const prefix = finalPrefix;
 
-        // Skip own messages unless they start with prefix (commands) or are pure numeric replies (for download selection)
-        if (msg.key.fromMe && !text.startsWith(finalPrefix) && !/^\d+$/.test(text.trim())) continue;
+        // Skip own messages unless they start with prefix (commands), are
+        // pure numeric replies (for download / menu selection), or are
+        // interactive component responses (button taps, list selections,
+        // native-flow taps) that the role-menu pipeline routes by id.
+        const hasInteractive = Boolean(
+            msg.message?.buttonsResponseMessage?.selectedButtonId
+            || msg.message?.templateButtonReplyMessage?.selectedId
+            || msg.message?.listResponseMessage?.singleSelectReply?.selectedRowId
+            || msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson
+        );
+        if (msg.key.fromMe && !text.startsWith(finalPrefix) && !/^\d+$/.test(text.trim()) && !hasInteractive) continue;
 
         if (db.isUserBanned(sender)) continue;
         if (!isUserOwner && (
