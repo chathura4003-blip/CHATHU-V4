@@ -114,6 +114,10 @@ function getSettingsPayload() {
         aiGroupMode: appState.getAiGroupMode(),
         aiSystemInstruction: appState.getAiSystemInstruction(),
         aiMaxWords: appState.getAiMaxWords(),
+        aiAutoWakeWords: appState.getAiAutoWakeWords(),
+        aiAutoBurstShield: appState.getAiAutoBurstShield(),
+        aiAutoLightReact: appState.getAiAutoLightReact(),
+        aiAutoMemoryDepth: appState.getAiAutoMemoryDepth(),
         premiumCode: cfg.PREMIUM_CODE,
         warnings: validation.warnings,
         runMode: validation.mode.explicitMode,
@@ -160,6 +164,10 @@ function getMainSessionPayload() {
         aiGroupMode: ov.aiGroupMode || appState.getAiGroupMode(),
         aiSystemInstruction: ov.aiSystemInstruction || appState.getAiSystemInstruction(),
         aiMaxWords: ov.aiMaxWords || appState.getAiMaxWords(),
+        aiAutoWakeWords: appState.getAiAutoWakeWords(),
+        aiAutoBurstShield: appState.getAiAutoBurstShield(),
+        aiAutoLightReact: appState.getAiAutoLightReact(),
+        aiAutoMemoryDepth: appState.getAiAutoMemoryDepth(),
         alwaysOnline: ov.alwaysOnline || false,
         antiCall: ov.antiCall || false,
         antiDelete: ov.antiDelete || false,
@@ -391,6 +399,19 @@ const statsTimer = setInterval(updateStats, 2000);
 if (typeof statsTimer.unref === 'function') statsTimer.unref();
 
 const io = new Server(server, { cors: { origin: false } });
+
+// Real-time bridge: when bot-side code mutates appState (e.g. via WhatsApp
+// commands like ".aiauto on", or via the runtime layer), broadcast a fresh
+// session:update + settings:update so any open dashboard reflects the change
+// without needing a manual refresh.
+appState.onChange((keys) => {
+    try {
+        io.emit('session:update', getMainSessionPayload());
+        io.emit('settings:update', getSettingsPayload());
+    } catch (e) {
+        // Don't let socket errors break the bot.
+    }
+});
 
 function createPortInUseError(port) {
     const error = new Error(`Dashboard port ${port} is already in use by another process.`);
@@ -882,6 +903,18 @@ app.post('/bot-api/sessions/:id/settings', authMiddleware, async (req, res) => {
                 overrides.aiMaxWords = parseInt(req.body.aiMaxWords) || 30;
                 appState.setAiMaxWords(overrides.aiMaxWords);
             }
+            if (req.body.aiAutoWakeWords !== undefined) {
+                appState.setAiAutoWakeWords(req.body.aiAutoWakeWords);
+            }
+            if (req.body.aiAutoBurstShield !== undefined) {
+                appState.setAiAutoBurstShield(!!req.body.aiAutoBurstShield);
+            }
+            if (req.body.aiAutoLightReact !== undefined) {
+                appState.setAiAutoLightReact(!!req.body.aiAutoLightReact);
+            }
+            if (req.body.aiAutoMemoryDepth !== undefined) {
+                appState.setAiAutoMemoryDepth(parseInt(req.body.aiAutoMemoryDepth) || 6);
+            }
             if (req.body.mentionReply !== undefined) overrides.mentionReply = String(req.body.mentionReply);
             if (req.body.alwaysOnline !== undefined) overrides.alwaysOnline = !!req.body.alwaysOnline;
             if (req.body.antiCall !== undefined) overrides.antiCall = !!req.body.antiCall;
@@ -1234,7 +1267,8 @@ app.get('/bot-api/settings', authMiddleware, (req, res) => {
 app.post('/bot-api/settings', authMiddleware, (req, res) => {
     const { 
         botName, prefix, autoRead, autoTyping, nsfwEnabled, workMode, autoViewStatus, autoReactStatus,
-        aiAutoReply, aiAutoPersona, aiAutoLang, aiAutoVoice, aiGroupMode, aiSystemInstruction, aiMaxWords
+        aiAutoReply, aiAutoPersona, aiAutoLang, aiAutoVoice, aiGroupMode, aiSystemInstruction, aiMaxWords,
+        aiAutoWakeWords, aiAutoBurstShield, aiAutoLightReact, aiAutoMemoryDepth
     } = req.body || {};
     try {
         if (botName !== undefined) db.setSetting('botName', String(botName).trim());
@@ -1262,6 +1296,10 @@ app.post('/bot-api/settings', authMiddleware, (req, res) => {
         if (aiGroupMode !== undefined) appState.setAiGroupMode(String(aiGroupMode));
         if (aiSystemInstruction !== undefined) appState.setAiSystemInstruction(String(aiSystemInstruction));
         if (aiMaxWords !== undefined) appState.setAiMaxWords(Number(aiMaxWords) || 30);
+        if (aiAutoWakeWords !== undefined) appState.setAiAutoWakeWords(aiAutoWakeWords);
+        if (aiAutoBurstShield !== undefined) appState.setAiAutoBurstShield(!!aiAutoBurstShield);
+        if (aiAutoLightReact !== undefined) appState.setAiAutoLightReact(!!aiAutoLightReact);
+        if (aiAutoMemoryDepth !== undefined) appState.setAiAutoMemoryDepth(Number(aiAutoMemoryDepth) || 6);
 
         db.flush();
         const payload = getSettingsPayload();

@@ -831,11 +831,14 @@ async function handleMessages(sock, messageBatch, sessionId = '__main__') {
 
                             setTimeout(async () => {
                                 try {
+                                    // Use single-codepoint emojis without VS16 selectors —
+                                    // some WhatsApp servers reject multi-codepoint sequences
+                                    // on status reactions with "not-acceptable".
                                     const reactions = [
-                                        "🔥", "❤️", "😂", "💯", "✨", "🚀", "😍", "🙏",
-                                        "🎉", "👏", "👍", "😁", "😎", "🤩", "😮", "💖",
-                                        "⚡", "👑", "🌹", "🥹", "😅", "🥰", "😜", "🤪",
-                                        "🥺", "😇", "😋", "😌"
+                                        "🔥", "💯", "✨", "🚀", "😍", "🙏",
+                                        "🎉", "👏", "👍", "😁", "😎", "🤩", "😮",
+                                        "⚡", "👑", "🌹", "😅", "😜", "🤪",
+                                        "😇", "😋", "😌"
                                     ];
 
                                     const emoji = reactions[Math.floor(Math.random() * reactions.length)];
@@ -843,11 +846,23 @@ async function handleMessages(sock, messageBatch, sessionId = '__main__') {
 
                                     if (selfJid && targetJid === selfJid) return;
 
+                                    // Rebuild the reaction key with a normalized participant
+                                    // (no `:device` suffix) and the canonical status remoteJid.
+                                    // Passing the raw msg.key — which may include a device-suffixed
+                                    // participant — is the most common cause of "not-acceptable"
+                                    // status-reaction failures.
+                                    const reactionKey = {
+                                        remoteJid: 'status@broadcast',
+                                        fromMe: false,
+                                        id: key.id,
+                                        participant: targetJid,
+                                    };
+
                                     const reactionPayload = {
                                         react: {
                                             text: emoji,
-                                            key: key
-                                        }
+                                            key: reactionKey,
+                                        },
                                     };
 
                                     await sock.sendMessage(
@@ -857,9 +872,16 @@ async function handleMessages(sock, messageBatch, sessionId = '__main__') {
                                     );
 
                                     logger(`[Status React] Attempted ${emoji} to ${sanitizedParticipant.split('@')[0]}`);
-                                    // logger(`[Status React Debug] response=${JSON.stringify(res)}`);
                                 } catch (reactErr) {
-                                    logger(`[Status React] Error: ${reactErr.message}`);
+                                    const msgErr = reactErr?.message || String(reactErr);
+                                    if (/not-acceptable/i.test(msgErr)) {
+                                        // Status likely expired (>24h) or recipient privacy
+                                        // settings disallow reactions — log once at debug level
+                                        // rather than as an error so logs aren't spammed.
+                                        logger(`[Status React] Skipped (not-acceptable, status may be expired or privacy-restricted) for ${sanitizedParticipant.split('@')[0]}`);
+                                    } else {
+                                        logger(`[Status React] Error: ${msgErr}`);
+                                    }
                                 }
                             }, reactDelay);
                         }
