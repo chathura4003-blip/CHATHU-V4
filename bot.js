@@ -21,7 +21,15 @@ const { getPrefix, getAutoRead, getAutoTyping, getBotName, getAutoViewStatus, ge
 const { captureViewOnce, isAntiViewOnceEnabled } = require('./lib/viewonce-capture');
 
 const BAD_WORDS = ['fuck', 'shit', 'bitch', 'asshole', 'bastard', 'cunt', 'dick', 'pussy', 'whore', 'nigger'];
-const messageStore = [];
+
+// Map<key, msg> instead of an array. Replaces the old O(n) `find()` lookup
+// with O(1) Map.get() and the O(n) `shift()` evict with the cheap "delete
+// the oldest insertion" trick (Map preserves insertion order). The cap is
+// also smaller (250 vs 1000) — Baileys' getMessage retry only ever asks
+// for fairly recent ids so a smaller window is plenty and uses far less
+// RAM under load.
+const MESSAGE_CACHE_CAP = 250;
+const messageStore = new Map();
 const spamMap = new Map();
 
 let activeSocket = null;
@@ -33,15 +41,25 @@ function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function _msgCacheKey(jid, id) {
+    return `${jid}|${id}`;
+}
+
 function cacheMsg(msg) {
     if (!msg?.message || !msg?.key?.id) return;
-    messageStore.push(msg);
-    // Increase limit to 1000 for multi-session support
-    if (messageStore.length > 1000) messageStore.shift();
+    const key = _msgCacheKey(msg.key.remoteJid, msg.key.id);
+    if (messageStore.has(key)) {
+        messageStore.delete(key); // re-insert at the tail
+    } else if (messageStore.size >= MESSAGE_CACHE_CAP) {
+        // Map preserves insertion order, so the first key is the oldest.
+        const oldest = messageStore.keys().next().value;
+        if (oldest !== undefined) messageStore.delete(oldest);
+    }
+    messageStore.set(key, msg);
 }
 
 function getCachedMsg(jid, id) {
-    return messageStore.find((msg) => msg.key.remoteJid === jid && msg.key.id === id);
+    return messageStore.get(_msgCacheKey(jid, id));
 }
 
 function getIO() {

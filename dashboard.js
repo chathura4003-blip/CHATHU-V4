@@ -396,9 +396,22 @@ async function updateStats() {
     } catch (e) { console.error('Stats error:', e.message); }
 }
 
-// Initial update and periodic loop every 2 seconds
+// systeminformation calls (networkStats / currentLoad) hit /proc on every
+// tick — that's pretty expensive on shared/free-tier hosts. We do one
+// initial fetch so first dashboard load has data, then poll every 10s, and
+// skip the poll entirely when nobody is watching the dashboard. This
+// reclaims a noticeable chunk of CPU on idle bots running on Railway /
+// Render free plans.
+const STATS_INTERVAL_MS = Math.max(2000, Number.parseInt(process.env.DASHBOARD_STATS_INTERVAL_MS, 10) || 10000);
 updateStats();
-const statsTimer = setInterval(updateStats, 2000);
+const statsTimer = setInterval(() => {
+    // io is created a few lines below; guard with optional chaining so the
+    // very first tick (which runs synchronously above) is the only one
+    // without io available.
+    const clientCount = io?.engine?.clientsCount || 0;
+    if (clientCount === 0) return;
+    updateStats();
+}, STATS_INTERVAL_MS);
 if (typeof statsTimer.unref === 'function') statsTimer.unref();
 
 const io = new Server(server, { cors: { origin: false } });
