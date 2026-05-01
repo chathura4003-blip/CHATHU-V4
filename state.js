@@ -1,5 +1,18 @@
 'use strict';
 
+// Lazy-cached require for the on-disk db. We do it lazily (rather than a
+// top-level require) because db.js imports config.js which in turn reads
+// state.js indirectly during boot in certain test setups; importing on
+// first use side-steps that cycle. After first call _db stays cached so
+// each get* / set* below avoids redoing the require.cache lookup on every
+// per-message read.
+let _db = null;
+function _getDb() {
+    if (_db) return _db;
+    try { _db = require('./lib/db'); } catch { _db = null; }
+    return _db;
+}
+
 let _socket = null;
 let _status = 'Disconnected';
 let _number = null;
@@ -90,198 +103,198 @@ module.exports = {
     getQrAttempts: () => _qrAttempts,
     incProcessedCount: () => {
         _processedCount++;
-        try { require('./lib/db').setSetting('main_processed_count', _processedCount); } catch {}
+        try { _getDb().setSetting('main_processed_count', _processedCount); } catch {}
         return _processedCount;
     },
     getProcessedCount: () => {
-        try { return require('./lib/db').getSetting('main_processed_count') || _processedCount; } catch { return _processedCount; }
+        try { return _getDb().getSetting('main_processed_count') || _processedCount; } catch { return _processedCount; }
     },
     incCommandsCount: () => {
         _commandsCount++;
-        try { require('./lib/db').setSetting('main_commands_count', _commandsCount); } catch {}
+        try { _getDb().setSetting('main_commands_count', _commandsCount); } catch {}
         return _commandsCount;
     },
     getCommandsCount: () => {
-        try { return require('./lib/db').getSetting('main_commands_count') || _commandsCount; } catch { return _commandsCount; }
+        try { return _getDb().getSetting('main_commands_count') || _commandsCount; } catch { return _commandsCount; }
     },
     setWorkMode: (v) => { 
         _workMode = v; 
-        try { require('./lib/db').setSetting('work_mode', v); } catch {}
+        try { _getDb().setSetting('work_mode', v); } catch {}
         _emit('workMode');
     },
     getWorkMode: () => {
-        try { return require('./lib/db').getSetting('work_mode') || _workMode; } catch { return _workMode; }
+        try { return _getDb().getSetting('work_mode') || _workMode; } catch { return _workMode; }
     },
     setAutoStatus: (v) => { 
         _autoStatus = !!v; 
-        try { require('./lib/db').setSetting('main_auto_status', !!v); } catch {}
+        try { _getDb().setSetting('main_auto_status', !!v); } catch {}
         _emit('autoStatus');
     },
     getAutoStatus: () => {
         try {
-            const val = require('./lib/db').getSetting('main_auto_status');
+            const val = _getDb().getSetting('main_auto_status');
             return val !== undefined ? val : _autoStatus;
         } catch { return _autoStatus; }
     },
     setBotEnabled: (v) => { 
         _botEnabled = !!v; 
-        try { require('./lib/db').setSetting('main_bot_enabled', !!v); } catch {}
+        try { _getDb().setSetting('main_bot_enabled', !!v); } catch {}
         _emit('botEnabled');
     },
     getBotEnabled: () => {
         try { 
-            const val = require('./lib/db').getSetting('main_bot_enabled');
+            const val = _getDb().getSetting('main_bot_enabled');
             return val !== undefined ? val : _botEnabled;
         } catch { return _botEnabled; }
     },
     setDisabledModules: (v) => { 
         _disabledModules = Array.isArray(v) ? v : []; 
-        try { require('./lib/db').setSetting('main_disabled_modules', _disabledModules); } catch {}
+        try { _getDb().setSetting('main_disabled_modules', _disabledModules); } catch {}
         _emit('disabledModules');
     },
     getDisabledModules: () => {
-        try { return require('./lib/db').getSetting('main_disabled_modules') || _disabledModules; } catch { return _disabledModules; }
+        try { return _getDb().getSetting('main_disabled_modules') || _disabledModules; } catch { return _disabledModules; }
     },
     setOwner: (v) => { 
         _owner = v; 
-        try { require('./lib/db').setSetting('main_owner', v); } catch {}
+        try { _getDb().setSetting('main_owner', v); } catch {}
         _emit('owner');
     },
     getOwner: () => {
-        try { return require('./lib/db').getSetting('main_owner') || _owner; } catch { return _owner; }
+        try { return _getDb().getSetting('main_owner') || _owner; } catch { return _owner; }
     },
     setAutoRead: (v) => {
-        try { require('./lib/db').setSetting('autoRead', v === null ? null : !!v); } catch {}
+        try { _getDb().setSetting('autoRead', v === null ? null : !!v); } catch {}
         _emit('autoRead');
     },
     getAutoRead: () => {
-        try { return require('./lib/db').getSetting('autoRead'); } catch { return null; }
+        try { return _getDb().getSetting('autoRead'); } catch { return null; }
     },
     setAutoTyping: (v) => {
-        try { require('./lib/db').setSetting('autoTyping', v === null ? null : !!v); } catch {}
+        try { _getDb().setSetting('autoTyping', v === null ? null : !!v); } catch {}
         _emit('autoTyping');
     },
     getAutoTyping: () => {
-        try { return require('./lib/db').getSetting('autoTyping'); } catch { return null; }
+        try { return _getDb().getSetting('autoTyping'); } catch { return null; }
     },
     setAutoReactStatus: (v) => {
-        try { require('./lib/db').setSetting('auto_react_status', v === null ? null : !!v); } catch {}
+        try { _getDb().setSetting('auto_react_status', v === null ? null : !!v); } catch {}
         _emit('autoReactStatus');
     },
     getAutoReactStatus: () => {
-        try { return require('./lib/db').getSetting('auto_react_status'); } catch { return null; }
+        try { return _getDb().getSetting('auto_react_status'); } catch { return null; }
     },
     setAntiViewOnceEnabled: (v) => {
-        try { require('./lib/db').setSetting('anti_view_once', !!v); } catch {}
+        try { _getDb().setSetting('anti_view_once', !!v); } catch {}
         _emit('antiViewOnce');
     },
     getAntiViewOnceEnabled: () => {
-        try { return require('./lib/db').getSetting('anti_view_once') === true; } catch { return false; }
+        try { return _getDb().getSetting('anti_view_once') === true; } catch { return false; }
     },
     setNsfwEnabled: (v) => {
-        try { require('./lib/db').setSetting('nsfwEnabled', v === null ? null : !!v); } catch {}
+        try { _getDb().setSetting('nsfwEnabled', v === null ? null : !!v); } catch {}
         _emit('nsfwEnabled');
     },
     getNsfwEnabled: () => {
-        try { return require('./lib/db').getSetting('nsfwEnabled'); } catch { return null; }
+        try { return _getDb().getSetting('nsfwEnabled'); } catch { return null; }
     },
     setAutoReply: (v) => {
-        try { require('./lib/db').setSetting('autoReply', v === null ? null : !!v); } catch {}
+        try { _getDb().setSetting('autoReply', v === null ? null : !!v); } catch {}
         _emit('autoReply');
     },
     getAutoReply: () => {
-        try { return require('./lib/db').getSetting('autoReply'); } catch { return null; }
+        try { return _getDb().getSetting('autoReply'); } catch { return null; }
     },
     setAiAutoReply: (v) => {
-        try { require('./lib/db').setSetting('aiAutoReply', v === null ? null : !!v); } catch {}
+        try { _getDb().setSetting('aiAutoReply', v === null ? null : !!v); } catch {}
         _emit('aiAutoReply');
     },
     getAiAutoReply: () => {
-        try { return require('./lib/db').getSetting('aiAutoReply'); } catch { return null; }
+        try { return _getDb().getSetting('aiAutoReply'); } catch { return null; }
     },
     setAiAutoPersona: (v) => {
-        try { require('./lib/db').setSetting('aiAutoPersona', v); } catch {}
+        try { _getDb().setSetting('aiAutoPersona', v); } catch {}
         _emit('aiAutoPersona');
     },
     getAiAutoPersona: () => {
-        try { return require('./lib/db').getSetting('aiAutoPersona') || 'friendly'; } catch { return 'friendly'; }
+        try { return _getDb().getSetting('aiAutoPersona') || 'friendly'; } catch { return 'friendly'; }
     },
     setAiAutoLang: (v) => {
-        try { require('./lib/db').setSetting('aiAutoLang', v); } catch {}
+        try { _getDb().setSetting('aiAutoLang', v); } catch {}
         _emit('aiAutoLang');
     },
     getAiAutoLang: () => {
-        try { return require('./lib/db').getSetting('aiAutoLang') || 'auto'; } catch { return 'auto'; }
+        try { return _getDb().getSetting('aiAutoLang') || 'auto'; } catch { return 'auto'; }
     },
     setAiAutoVoice: (v) => {
-        try { require('./lib/db').setSetting('aiAutoVoice', !!v); } catch { return false; }
+        try { _getDb().setSetting('aiAutoVoice', !!v); } catch { return false; }
         _emit('aiAutoVoice');
     },
     getAiAutoVoice: () => {
-        try { return require('./lib/db').getSetting('aiAutoVoice') === true; } catch { return false; }
+        try { return _getDb().getSetting('aiAutoVoice') === true; } catch { return false; }
     },
     setAiGroupMode: (v) => {
-        try { require('./lib/db').setSetting('aiGroupMode', v); } catch {}
+        try { _getDb().setSetting('aiGroupMode', v); } catch {}
         _emit('aiGroupMode');
     },
     getAiGroupMode: () => {
-        try { return require('./lib/db').getSetting('aiGroupMode') || 'mention'; } catch { return 'mention'; }
+        try { return _getDb().getSetting('aiGroupMode') || 'mention'; } catch { return 'mention'; }
     },
     setAiSystemInstruction: (v) => {
-        try { require('./lib/db').setSetting('aiSystemInstruction', v); } catch {}
+        try { _getDb().setSetting('aiSystemInstruction', v); } catch {}
         _emit('aiSystemInstruction');
     },
     getAiSystemInstruction: () => {
-        try { return require('./lib/db').getSetting('aiSystemInstruction') || ''; } catch { return ''; }
+        try { return _getDb().getSetting('aiSystemInstruction') || ''; } catch { return ''; }
     },
     setAiMaxWords: (v) => {
-        try { require('./lib/db').setSetting('aiMaxWords', parseInt(v) || 30); } catch {}
+        try { _getDb().setSetting('aiMaxWords', parseInt(v) || 30); } catch {}
         _emit('aiMaxWords');
     },
     getAiMaxWords: () => {
-        try { return parseInt(require('./lib/db').getSetting('aiMaxWords')) || 30; } catch { return 30; }
+        try { return parseInt(_getDb().getSetting('aiMaxWords')) || 30; } catch { return 30; }
     },
     // --- AI auto-reply advanced features --------------------------------
     setAiAutoWakeWords: (v) => {
         const cleaned = String(v || '')
             .split(/[,\n]+/).map(s => s.trim().toLowerCase()).filter(Boolean)
             .slice(0, 30).join(',');
-        try { require('./lib/db').setSetting('aiAutoWakeWords', cleaned); } catch {}
+        try { _getDb().setSetting('aiAutoWakeWords', cleaned); } catch {}
         _emit('aiAutoWakeWords');
     },
     getAiAutoWakeWords: () => {
         try {
-            const raw = require('./lib/db').getSetting('aiAutoWakeWords') || '';
+            const raw = _getDb().getSetting('aiAutoWakeWords') || '';
             return String(raw).split(',').map(s => s.trim()).filter(Boolean);
         } catch { return []; }
     },
     setAiAutoBurstShield: (v) => {
-        try { require('./lib/db').setSetting('aiAutoBurstShield', v === null ? null : !!v); } catch {}
+        try { _getDb().setSetting('aiAutoBurstShield', v === null ? null : !!v); } catch {}
         _emit('aiAutoBurstShield');
     },
     getAiAutoBurstShield: () => {
         try {
-            const val = require('./lib/db').getSetting('aiAutoBurstShield');
+            const val = _getDb().getSetting('aiAutoBurstShield');
             return val === undefined || val === null ? true : !!val;
         } catch { return true; }
     },
     setAiAutoLightReact: (v) => {
-        try { require('./lib/db').setSetting('aiAutoLightReact', v === null ? null : !!v); } catch {}
+        try { _getDb().setSetting('aiAutoLightReact', v === null ? null : !!v); } catch {}
         _emit('aiAutoLightReact');
     },
     getAiAutoLightReact: () => {
         try {
-            const val = require('./lib/db').getSetting('aiAutoLightReact');
+            const val = _getDb().getSetting('aiAutoLightReact');
             return val === undefined || val === null ? true : !!val;
         } catch { return true; }
     },
     setAiAutoMemoryDepth: (v) => {
         const n = Math.max(2, Math.min(parseInt(v) || 6, 20));
-        try { require('./lib/db').setSetting('aiAutoMemoryDepth', n); } catch {}
+        try { _getDb().setSetting('aiAutoMemoryDepth', n); } catch {}
         _emit('aiAutoMemoryDepth');
     },
     getAiAutoMemoryDepth: () => {
-        try { return Math.max(2, Math.min(parseInt(require('./lib/db').getSetting('aiAutoMemoryDepth')) || 6, 20)); } catch { return 6; }
+        try { return Math.max(2, Math.min(parseInt(_getDb().getSetting('aiAutoMemoryDepth')) || 6, 20)); } catch { return 6; }
     },
 
     // --- Button Mode (bot-wide menu UI mode) ----------------------------
@@ -295,13 +308,13 @@ module.exports = {
     setButtonMode: (v) => {
         const norm = _normalizeButtonMode(v);
         if (norm == null) return false;
-        try { require('./lib/db').setSetting('buttonMode', norm); } catch {}
+        try { _getDb().setSetting('buttonMode', norm); } catch {}
         _emit('buttonMode');
         return true;
     },
     getButtonMode: () => {
         try {
-            const v = require('./lib/db').getSetting('buttonMode');
+            const v = _getDb().getSetting('buttonMode');
             const norm = _normalizeButtonMode(v);
             if (norm) return norm;
         } catch {}
@@ -320,13 +333,13 @@ module.exports = {
         const allowed = ['strict', 'relaxed', 'off'];
         const val = String(v || '').toLowerCase().trim();
         if (!allowed.includes(val)) return false;
-        try { require('./lib/db').setSetting('roleMenuMode', val); } catch {}
+        try { _getDb().setSetting('roleMenuMode', val); } catch {}
         _emit('roleMenuMode');
         return true;
     },
     getRoleMenuMode: () => {
         try {
-            const v = require('./lib/db').getSetting('roleMenuMode');
+            const v = _getDb().getSetting('roleMenuMode');
             const allowed = ['strict', 'relaxed', 'off'];
             if (typeof v === 'string' && allowed.includes(v.toLowerCase())) return v.toLowerCase();
         } catch {}
