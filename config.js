@@ -89,7 +89,10 @@ module.exports = {
   VIEWONCE_DIR,
   VIEWONCE_LOG_PATH,
   DB_PATH,
-  BROWSER: ["Ubuntu", "Chrome", "131.0.6778.205"],
+  // Identifies the bot in WhatsApp's "Linked devices" list. Matches the
+  // triple Baileys' Browsers.macOS('Chrome') would produce, so the device
+  // shows up as a Mac client instead of Ubuntu.
+  BROWSER: ["Mac OS", "Chrome", "14.4.1"],
   SEARCH_CACHE_TTL: readInt(process.env.SEARCH_CACHE_TTL, 300000),
   DOWNLOAD_CACHE_TTL: readInt(process.env.DOWNLOAD_CACHE_TTL, 10 * 60 * 1000),
   AUTO_READ: String(process.env.AUTO_READ || "true").toLowerCase() !== "false",
